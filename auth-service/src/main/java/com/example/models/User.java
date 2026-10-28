@@ -16,4 +16,8 @@ public class User extends PanacheMongoEntity {
     public Boolean isActive = true;
     public ObjectId customerId;
     public Instant createdAt = Instant.now();
+
+    public static User findByEmail(String email) {
+        return find("email", email).firstResult();
+    }
 }
