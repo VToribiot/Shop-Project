@@ -62,7 +62,7 @@ public class AuthService {
             BcryptUtil.matches(password, DUMMY_HASH);
             throw invalid();
         }
-        if (!Boolean.TRUE.equals(u.isActive))
+        if (u.isActive)
             throw invalid();
         if (!BcryptUtil.matches(password, u.passwordHash)) {
             throw invalid();
@@ -86,7 +86,7 @@ public class AuthService {
             throw invalid();
         }
         User u = User.findById(rt.userId);
-        if (u == null || !Boolean.TRUE.equals(u.isActive)) {
+        if (u == null || !u.isActive) {
             revokeFamily(rt);
             throw invalid();
         }
