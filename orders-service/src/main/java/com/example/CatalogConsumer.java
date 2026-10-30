@@ -25,10 +25,17 @@ public class CatalogConsumer {
     @Incoming("product-events-in")
     @Blocking
     public void onMessage(String json) throws Exception {
+        System.out.println("Received product event");
+
         EventEnvelope env = mapper.readValue(json, EventEnvelope.class);
-        if (!"ProductUpserted".equals(env.type()))
+
+        if (!"ProductUpserted".equals(env.type())) {
+            System.out.println("Ignored event: " + env.type());
             return;
-        ProductUpserted e = mapper.treeToValue(env.data(), ProductUpserted.class);
+        }
+
+        ProductUpserted e = mapper.treeToValue(
+                env.data(), ProductUpserted.class);
 
         CatalogProduct c = new CatalogProduct();
         c.id = new ObjectId(e.productId());
@@ -36,6 +43,11 @@ public class CatalogConsumer {
         c.name = e.name();
         c.price = Double.parseDouble(e.price());
         c.active = e.active();
+
+        System.out.println("Saving product: " + c.name);
+
         c.persistOrUpdate();
+
+        System.out.println("Product saved successfully!");
     }
 }
