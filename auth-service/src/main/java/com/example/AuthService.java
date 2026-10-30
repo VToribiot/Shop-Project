@@ -67,10 +67,6 @@ public class AuthService {
         if (!BcryptUtil.matches(password, u.passwordHash)) {
             throw invalid();
         }
-        User.mongoCollection().updateOne(eq("_id", u.id), combine(
-                set("failedLoginCount", 0),
-                unset("lockedUntil"),
-                set("lastLoginAt", Instant.now())));
         return tokens.createTokenPayload(u);
     }
 
@@ -97,6 +93,12 @@ public class AuthService {
         RefreshToken rt = RefreshToken.find(FIELD_TOKEN_HASH, TokenService.tokenHash(raw)).firstResult();
         if (rt != null)
             revokeFamily(rt);
+    }
+
+    public void disable(String id) {
+        revokeFamily(RefreshToken.find(FIELD_TOKEN_HASH, id).firstResult());
+
+        User.mongoCollection().updateOne(eq("_id", id), set("isActive", false));
     }
 
     private void revokeFamily(RefreshToken token) {
