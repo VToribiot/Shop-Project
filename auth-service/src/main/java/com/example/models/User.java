@@ -13,7 +13,7 @@ public class User extends PanacheMongoEntity {
     public String name;
     public String passwordHash;
     public List<String> roles = new ArrayList<>();
-    public Boolean isActive = true;
+    public boolean isActive = true;
     public ObjectId customerId;
     public Instant createdAt = Instant.now();
 
