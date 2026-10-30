@@ -34,17 +34,21 @@ public class CatalogConsumer {
             return;
         }
 
-        ProductUpserted e = mapper.treeToValue(
-                env.data(), ProductUpserted.class);
+        ProductUpserted e = mapper.treeToValue(env.data(), ProductUpserted.class);
+        ObjectId productId = new ObjectId(e.productId());
+
+        if (!e.active()) {
+            boolean deleted = CatalogProduct.deleteById(productId);
+            System.out.println("Product " + productId + (deleted ? " deleted" : " not found, nothing to delete"));
+            return;
+        }
 
         CatalogProduct c = new CatalogProduct();
-        c.id = new ObjectId(e.productId());
+        c.id = productId;
         c.sku = e.sku();
         c.name = e.name();
         c.price = Double.parseDouble(e.price());
-        c.active = e.active();
-
-        System.out.println("Saving product: " + c.name);
+        c.active = true;
 
         c.persistOrUpdate();
 

@@ -88,7 +88,7 @@ public class ProductService {
             UpdateResult updateResult = Product.mongoCollection().updateOne(
                     s,
                     eq("_id", oid),
-                    set("active", false));
+                    combine(set("active", false), set("stock", 0)));
             if (updateResult.getMatchedCount() > 0)
                 publish(s, Product.findById(oid));
             return updateResult;
