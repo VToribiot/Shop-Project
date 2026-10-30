@@ -8,7 +8,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import com.example.models.OrderView;
 import com.example.models.requests.OrderPostRequest;
 
-import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -23,7 +22,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 @Path("/orders")
-@Authenticated
+@RolesAllowed({ "customer", "admin" })
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class OrderResource {
@@ -38,7 +37,6 @@ public class OrderResource {
     }
 
     @GET
-    @RolesAllowed({ "customer", "admin" })
     public List<OrderView> list() {
         return isAdmin()
                 ? orderService.listAll()
@@ -47,7 +45,6 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({ "customer", "admin" })
     public OrderView get(@PathParam("id") String id) {
         return OrderView.of(orderService.find(id));
     }
@@ -61,7 +58,6 @@ public class OrderResource {
 
     @POST
     @Path("/{id}/cancel")
-    @RolesAllowed({ "customer", "admin" })
     public Response cancel(@PathParam("id") String id) {
         return Response.ok(orderService.cancel(id)).build();
     }
