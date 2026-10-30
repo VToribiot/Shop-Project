@@ -11,6 +11,11 @@ import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.set;
 
+import com.common.Events.OrderCancelled;
+import com.common.Events.OrderPlaced;
+import com.common.MongoContext;
+import com.common.Outbox;
+import com.common.Topics;
 import com.example.models.CatalogProduct;
 import com.example.models.Order;
 import com.example.models.OrderItem;
@@ -28,11 +33,13 @@ import jakarta.ws.rs.WebApplicationException;
 @ApplicationScoped
 public class OrderService {
 
-    private final MongoContext mongoContext;
+    private final MongoContext context;
+    private final Outbox outbox;
 
     @Inject
-    public OrderService(MongoContext mongoContext) {
-        this.mongoContext = mongoContext;
+    public OrderService(MongoContext context, Outbox outbox) {
+        this.context = context;
+        this.outbox = outbox;
     }
 
     public OrderView create(OrderPostRequest request, ObjectId customerId) {
@@ -41,6 +48,7 @@ public class OrderService {
         Order order = new Order(customerId, new ArrayList<>(), total);
         order.id = new ObjectId();
         order.customerId = customerId;
+        List<OrderPlaced.Item> eventItems = new ArrayList<>();
 
         for (ItemRequest r : request.items()) {
             CatalogProduct p = CatalogProduct.findById(parseId(r.productId()));
@@ -49,12 +57,15 @@ public class OrderService {
             }
             OrderItem item = new OrderItem(p.id, p.sku, p.name, p.price, r.quantity());
             order.items.add(item);
+            eventItems.add(new OrderPlaced.Item(p.id.toHexString(), r.quantity()));
             total += p.price * r.quantity();
         }
         order.total = total;
 
-        mongoContext.run(s -> {
+        OrderPlaced event = new OrderPlaced(order.id.toHexString(), order.customerId.toHexString(), eventItems);
+        context.run(s -> {
             Order.mongoCollection().insertOne(s, order);
+            outbox.add(s, Topics.ORDER_EVENTS, event.orderId(), "OrderPlaced", event);
             return null;
         });
 
@@ -63,12 +74,18 @@ public class OrderService {
 
     public OrderView cancel(String id) {
         Order o = find(id);
+        List<OrderPlaced.Item> items = o.items.stream()
+                .map(i -> new OrderPlaced.Item(i.productId.toHexString(), i.quantity)).toList();
 
-        boolean cancelled = mongoContext.run(s -> {
+        boolean cancelled = context.run(s -> {
             var result = Order.mongoCollection().updateOne(s,
                     and(eq("_id", o.id), eq("status", OrderStatus.CONFIRMED)),
                     combine(set("status", OrderStatus.CANCELLED), set("updatedAt", Instant.now())));
-            return result.getModifiedCount() != 0;
+            if (result.getModifiedCount() == 0)
+                return false;
+            outbox.add(s, Topics.ORDER_EVENTS, id, "OrderCancelled",
+                    new OrderCancelled(id, o.customerId.toHexString(), items));
+            return true;
         });
         if (!cancelled) {
             throw new WebApplicationException("Only CONFIRMED orders can be cancelled", 409);
