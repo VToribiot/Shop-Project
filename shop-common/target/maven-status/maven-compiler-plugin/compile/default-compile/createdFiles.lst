@@ -1,0 +1,13 @@
+com\common\Events$OrderPlaced.class
+com\common\Events$StockRejected.class
+com\common\Events$StockReserved.class
+com\common\MongoContext.class
+com\common\Outbox.class
+com\common\Events.class
+com\common\EventEnvelope.class
+com\common\KafkaPublisher.class
+com\common\Events$OrderPlaced$Item.class
+com\common\OutboxRelay.class
+com\common\Events$ProductUpserted.class
+com\common\Events$OrderCancelled.class
+com\common\Topics.class

@@ -61,7 +61,7 @@ public class OrderResource {
 
     @POST
     @Path("/{id}/cancel")
-    @RolesAllowed("customer")
+    @RolesAllowed({ "customer", "admin" })
     public Response cancel(@PathParam("id") String id) {
         return Response.ok(orderService.cancel(id)).build();
     }

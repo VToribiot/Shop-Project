@@ -8,12 +8,17 @@ import java.util.List;
 
 import org.bson.types.ObjectId;
 
+import com.common.Events.ProductUpserted;
+import com.common.MongoContext;
+import com.common.Outbox;
+import com.common.Topics;
 import com.example.models.Product;
 import com.example.models.ProductView;
 import com.example.models.requests.ProductPatchRequest;
 import com.example.models.requests.ProductPostRequest;
 import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.result.UpdateResult;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,11 +29,13 @@ import jakarta.ws.rs.NotFoundException;
 @ApplicationScoped
 public class ProductService {
 
-    final MongoContext context;
+    private final MongoContext context;
+    private final Outbox outbox;
 
     @Inject
-    public ProductService(MongoContext tx) {
-        this.context = tx;
+    public ProductService(MongoContext context, Outbox outbox) {
+        this.context = context;
+        this.outbox = outbox;
     }
 
     public ProductView create(ProductPostRequest product) {
@@ -42,6 +49,7 @@ public class ProductService {
         try {
             context.run(s -> {
                 Product.mongoCollection().insertOne(s, p);
+                publish(s, p);
                 return null;
             });
 
@@ -66,6 +74,7 @@ public class ProductService {
         context.run(s -> {
             Product.mongoCollection().updateOne(s, eq("_id", p.id),
                     combine(set("name", p.name), set("price", p.price)));
+            publish(s, p);
             return null;
         });
 
@@ -75,14 +84,40 @@ public class ProductService {
     public void disable(String id) {
         ObjectId oid = parseId(id);
 
-        UpdateResult result = context.run(s -> Product.mongoCollection().updateOne(
-                s,
-                eq("_id", oid),
-                set("active", false)));
+        UpdateResult result = context.run(s -> {
+            UpdateResult updateResult = Product.mongoCollection().updateOne(
+                    s,
+                    eq("_id", oid),
+                    set("active", false));
+            if (updateResult.getMatchedCount() > 0)
+                publish(s, Product.findById(oid));
+            return updateResult;
+        });
 
         if (result.getMatchedCount() == 0) {
             throw new NotFoundException("Product " + id + " not found");
         }
+    }
+
+    public ProductView adjustStock(String id, int delta) {
+        ObjectId oid = parseId(id);
+
+        UpdateResult result = context.run(s -> {
+            UpdateResult updateResult = Product.mongoCollection().updateOne(
+                    s,
+                    eq("_id", oid),
+                    combine(set("stock", Math.max(0, delta))));
+            if (updateResult.getMatchedCount() > 0)
+                publish(s, Product.findById(oid));
+            return updateResult;
+
+        });
+
+        if (result.getMatchedCount() == 0) {
+            throw new NotFoundException("Product " + id + " not found");
+        }
+
+        return ProductView.of(find(id));
     }
 
     public Product find(String id) {
@@ -102,6 +137,11 @@ public class ProductService {
             throw new BadRequestException(id + " is not a valid ObjectId");
         }
         return new ObjectId(id);
+    }
+
+    private void publish(ClientSession s, Product p) {
+        outbox.add(s, Topics.PRODUCT_EVENTS, p.id.toHexString(), "ProductUpserted",
+                new ProductUpserted(p.id.toHexString(), p.sku, p.name, Double.toString(p.price), p.active));
     }
 
 }

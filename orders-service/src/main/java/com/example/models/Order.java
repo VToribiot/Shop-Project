@@ -16,6 +16,9 @@ public class Order extends PanacheMongoEntity {
     public Instant createdAt = Instant.now();
     public Instant updatedAt = Instant.now();
 
+    public Order() {
+    }
+
     public Order(ObjectId customerId, List<OrderItem> items, double total) {
         this.id = new ObjectId();
         this.customerId = customerId;

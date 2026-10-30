@@ -9,6 +9,9 @@ public class OrderItem {
     public double unitPrice;
     public int quantity;
 
+    public OrderItem() {
+    }
+
     public OrderItem(ObjectId productId, String sku, String name, double unitPrice, int quantity) {
         this.productId = productId;
         this.sku = sku;
