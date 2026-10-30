@@ -18,7 +18,6 @@ This is a learning project for the Quarkus + Kafka stack, so some choices follow
 - [API Overview](#api-overview)
 - [Project Structure](#project-structure)
 - [Development](#development)
-- [Known Gaps and Roadmap](#known-gaps-and-roadmap)
 
 ## Architecture
 
