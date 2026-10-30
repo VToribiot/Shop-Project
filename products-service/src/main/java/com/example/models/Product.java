@@ -1,7 +1,5 @@
 package com.example.models;
 
-import java.math.BigDecimal;
-
 import org.bson.types.ObjectId;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
