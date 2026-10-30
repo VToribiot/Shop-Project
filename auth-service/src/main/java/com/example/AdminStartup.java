@@ -35,7 +35,7 @@ public class AdminStartup {
             return;
         if (User.findByEmail(email.get().toLowerCase().trim()) != null)
             return;
-        auth.register(email.get(), password.get(), List.of("admin", "customer"));
+        auth.register("John Doe", email.get(), password.get(), List.of("admin", "customer"));
         Log.infof("Bootstrap admin created: %s", email.get());
     }
 }

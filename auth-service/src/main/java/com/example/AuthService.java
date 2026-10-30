@@ -42,12 +42,13 @@ public class AuthService {
         this.tokens = tokens;
     }
 
-    public User register(String email, String password, List<String> roles) {
+    public User register(String name, String email, String password, List<String> roles) {
         String e = email.toLowerCase().trim();
         if (User.findByEmail(e) != null) {
             throw new WebApplicationException("Email already registered", 409);
         }
         User u = new User();
+        u.name = name;
         u.email = e;
         u.passwordHash = BcryptUtil.bcryptHash(password);
         u.roles = new ArrayList<>(roles);

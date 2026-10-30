@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.example.models.Credentials;
 import com.example.models.RefreshRequest;
+import com.example.models.RegistryRequest;
 import com.example.models.TokenPayload;
 import com.example.models.User;
 
@@ -38,10 +39,10 @@ public class AuthResource {
     @POST
     @PermitAll
     @Path("/register")
-    public Response register(@Valid Credentials c) {
-        User user = auth.register(c.email(), c.password(), List.of("customer"));
+    public Response register(@Valid RegistryRequest r) {
+        User user = auth.register(r.name(), r.email(), r.password(), List.of("customer"));
 
-        return Response.status(201).entity(Map.of("id", user.id.toHexString(), "email", user.email,
+        return Response.status(201).entity(Map.of("id", user.id.toHexString(), "name", user.name, "email", user.email,
                 "customerId", user.customerId.toHexString()))
                 .build();
     }
