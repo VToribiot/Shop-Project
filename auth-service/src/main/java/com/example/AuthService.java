@@ -62,7 +62,7 @@ public class AuthService {
             BcryptUtil.matches(password, DUMMY_HASH);
             throw invalid();
         }
-        if (u.isActive)
+        if (!u.isActive)
             throw invalid();
         if (!BcryptUtil.matches(password, u.passwordHash)) {
             throw invalid();
