@@ -87,13 +87,13 @@ public class ProductService {
 
     public Product find(String id) {
         Product p = Product.findById(parseId(id));
-        if (p == null)
+        if (p == null || !p.active)
             throw new NotFoundException();
         return p;
     }
 
     public List<ProductView> findAll() {
-        List<Product> all = Product.listAll();
+        List<Product> all = Product.list(eq("active", true));
         return all.stream().map(ProductView::of).toList();
     }
 
